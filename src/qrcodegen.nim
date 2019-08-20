@@ -325,13 +325,14 @@ proc printQr*(qrcode: ptr uint8_t) =
   output = output & "\n"
   echo output
 
+when isMainModule:
+  # Example print to screen
+  var qrcode: array[BUFFER_LEN_MAX, uint8_t]
+  var tempBuffer: array[BUFFER_LEN_MAX, uint8_t]
+  discard encodeText("QR Code", addr tempBuffer[0], addr qrcode[0], Ecc_Medium, VERSION_MIN, VERSION_MAX, Mask_AUTO, true)
 
-var qrcode: array[BUFFER_LEN_MAX, uint8_t]
-var tempBuffer: array[BUFFER_LEN_MAX, uint8_t]
-discard encodeText("QR Code", addr tempBuffer[0], addr qrcode[0], Ecc_Medium, VERSION_MIN, VERSION_MAX, Mask_AUTO, true)
 
-
-printQr(addr qrcode[0])
+  printQr(addr qrcode[0])
 
 
 
