@@ -326,10 +326,17 @@ proc printQr*(qrcode: ptr uint8_t) =
   echo output
 
 when isMainModule:
+  import os
+  var text:string
+  if paramCount() == 1:
+    text = paramStr(1)
+  else:
+    text = "QR Code"
+
   # Example print to screen
   var qrcode: array[BUFFER_LEN_MAX, uint8_t]
   var tempBuffer: array[BUFFER_LEN_MAX, uint8_t]
-  discard encodeText("QR Code", addr tempBuffer[0], addr qrcode[0], Ecc_Medium, VERSION_MIN, VERSION_MAX, Mask_AUTO, true)
+  discard encodeText(cstring text, addr tempBuffer[0], addr qrcode[0], Ecc_Medium, VERSION_MIN, VERSION_MAX, Mask_AUTO, true)
 
 
   printQr(addr qrcode[0])
