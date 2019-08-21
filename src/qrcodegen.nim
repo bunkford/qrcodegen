@@ -48,8 +48,8 @@
 ##  import qrcodegen
 ##
 ##  # print to screen
-##  var qrcode: array[BUFFER_LEN_MAX, uint8_t]
-##  var tempBuffer: array[BUFFER_LEN_MAX, uint8_t]
+##  var qrcode: array[BUFFER_LEN_MAX, uint8]
+##  var tempBuffer: array[BUFFER_LEN_MAX, uint8]
 ##  if encodeText("Hello, World", addr tempBuffer[0], addr qrcode[0], Ecc_Medium, VERSION_MIN, VERSION_MAX, Mask_AUTO, true):
 ##    printQr(addr qrcode[0])
 ##
@@ -70,9 +70,6 @@ else:
 
 
 # ---- Enum and struct types----
-
-type
-  uint8_t = uint8
 
 type
   Ecc* {.size: sizeof(cint).} = enum 
@@ -115,7 +112,7 @@ type
     ##  Always zero or positive. Not the same as the data's bit length.
     numChars*: cint ##  The data bits of this segment, packed in bitwise big endian.
                   ##  Can be null if the bit length is zero.
-    data*: ptr uint8_t ##  The number of valid data bits used in the buffer. Requires
+    data*: ptr uint8 ##  The number of valid data bits used in the buffer. Requires
                     ##  0 <= bitLength <= 32767, and bitLength <= (capacity of data array) * 8.
                     ##  The character count (numChars) must agree with the mode and the bit buffer length.
     bitLength*: cint
@@ -133,7 +130,7 @@ const
 template BUFFER_LEN_FOR_VERSION*(n: untyped): untyped = 
     ((((n) * 4 + 17) * ((n) * 4 + 17) + 7) div 8 + 1)
   ##  Calculates the number of bytes needed to store any QR Code up to and including the given version number,
-  ##  as a compile-time constant. For example, 'uint8_t buffer[BUFFER_LEN_FOR_VERSION(25)];'
+  ##  as a compile-time constant. For example, 'uint8 buffer[BUFFER_LEN_FOR_VERSION(25)];'
   ##  can store any single QR Code from version 1 to 25 (inclusive). The result fits in an int (or int16).
   ##  Requires VERSION_MIN <= n <= VERSION_MAX.
 
@@ -147,7 +144,7 @@ const
 
 
 
-proc encodeText*(text: cstring; tempBuffer: ptr uint8_t; qrcode: ptr uint8_t; ecl: Ecc;
+proc encodeText*(text: cstring; tempBuffer: ptr uint8; qrcode: ptr uint8; ecl: Ecc;
                 minVersion: cint; maxVersion: cint; mask: Mask; boostEcl: bool): bool {.
     cdecl, importc: "qrcodegen_encodeText", dynlib: libname.}
   ##  Encodes the given text string to a QR Code, returning true if encoding succeeded.
@@ -168,7 +165,7 @@ proc encodeText*(text: cstring; tempBuffer: ptr uint8_t; qrcode: ptr uint8_t; ec
   ##  - Please consult the QR Code specification for information on
   ##    data capacities per version, ECC level, and text encoding mode.
 
-proc encodeBinary*(dataAndTemp: ptr uint8_t; dataLen: csize; qrcode: ptr uint8_t;
+proc encodeBinary*(dataAndTemp: ptr uint8; dataLen: csize; qrcode: ptr uint8;
                   ecl: Ecc; minVersion: cint; maxVersion: cint; mask: Mask;
                   boostEcl: bool): bool {.cdecl, importc: "qrcodegen_encodeBinary",
                                        dynlib: libname.}
@@ -193,8 +190,8 @@ proc encodeBinary*(dataAndTemp: ptr uint8_t; dataLen: csize; qrcode: ptr uint8_t
 
 
 
-proc encodeSegments*(segs: ptr Segment; len: csize; ecl: Ecc; tempBuffer: ptr uint8_t;
-                    qrcode: ptr uint8_t): bool {.cdecl,
+proc encodeSegments*(segs: ptr Segment; len: csize; ecl: Ecc; tempBuffer: ptr uint8;
+                    qrcode: ptr uint8): bool {.cdecl,
     importc: "qrcodegen_encodeSegments", dynlib: libname.}
   ##  Renders a QR Code representing the given segments at the given error correction level.
   ##  The smallest possible QR Code version is automatically chosen for the output. Returns true if
@@ -209,7 +206,7 @@ proc encodeSegments*(segs: ptr Segment; len: csize; ecl: Ecc; tempBuffer: ptr ui
 
 proc encodeSegmentsAdvanced*(segs: ptr Segment; len: csize; ecl: Ecc; minVersion: cint;
                             maxVersion: cint; mask: Mask; boostEcl: bool;
-                            tempBuffer: ptr uint8_t; qrcode: ptr uint8_t): bool {.
+                            tempBuffer: ptr uint8; qrcode: ptr uint8): bool {.
     cdecl, importc: "qrcodegen_encodeSegmentsAdvanced", dynlib: libname.}
   ##  Renders a QR Code representing the given segments with the given encoding parameters.
   ##  Returns true if QR Code creation succeeded, or false if the data is too long to fit in the range of versions.
@@ -242,7 +239,7 @@ proc isNumeric*(text: cstring): bool {.cdecl, importc: "qrcodegen_isNumeric",
 
 proc calcSegmentBufferSize*(mode: Mode; numChars: csize): csize {.cdecl,
     importc: "qrcodegen_calcSegmentBufferSize", dynlib: libname.}
-  ##  Returns the number of bytes (uint8_t) needed for the data buffer of a segment
+  ##  Returns the number of bytes (uint8) needed for the data buffer of a segment
   ##  containing the given number of characters using the given mode. Notes:
   ##  - Returns SIZE_MAX on failure, i.e. numChars > INT16_MAX or
   ##    the number of needed bits exceeds INT16_MAX (i.e. 32767).
@@ -252,23 +249,23 @@ proc calcSegmentBufferSize*(mode: Mode; numChars: csize): csize {.cdecl,
   ##  - For ECI mode, numChars must be 0, and the worst-case number of bytes is returned.
   ##    An actual ECI segment can have shorter data. For non-ECI modes, the result is exact.
 
-proc makeBytes*(data: ptr uint8_t; len: csize; buf: ptr uint8_t): Segment {.cdecl,
+proc makeBytes*(data: ptr uint8; len: csize; buf: ptr uint8): Segment {.cdecl,
     importc: "qrcodegen_makeBytes", dynlib: libname.}
   ##  Returns a segment representing the given binary data encoded in
   ##  byte mode. All input byte arrays are acceptable. Any text string
   ##  can be converted to UTF-8 bytes and encoded as a byte mode segment.
 
-proc makeNumeric*(digits: cstring; buf: ptr uint8_t): Segment {.cdecl,
+proc makeNumeric*(digits: cstring; buf: ptr uint8): Segment {.cdecl,
     importc: "qrcodegen_makeNumeric", dynlib: libname.}
   ##  Returns a segment representing the given string of decimal digits encoded in numeric mode.
 
-proc makeAlphanumeric*(text: cstring; buf: ptr uint8_t): Segment {.cdecl,
+proc makeAlphanumeric*(text: cstring; buf: ptr uint8): Segment {.cdecl,
     importc: "qrcodegen_makeAlphanumeric", dynlib: libname.}
   ##  Returns a segment representing the given text string encoded in alphanumeric mode.
   ##  The characters allowed are: 0 to 9, A to Z (uppercase only), space,
   ##  dollar, percent, asterisk, plus, hyphen, period, slash, colon.
 
-proc makeEci*(assignVal: clong; buf: ptr uint8_t): Segment {.cdecl,
+proc makeEci*(assignVal: clong; buf: ptr uint8): Segment {.cdecl,
     importc: "qrcodegen_makeEci", dynlib: libname.}
   ##  Returns a segment representing an Extended Channel Interpretation
   ##  (ECI) designator with the given assignment value.
@@ -277,14 +274,14 @@ proc makeEci*(assignVal: clong; buf: ptr uint8_t): Segment {.cdecl,
 
 
 
-proc getSize*(qrcode: ptr uint8_t): cint {.cdecl, importc: "qrcodegen_getSize",
+proc getSize*(qrcode: ptr uint8): cint {.cdecl, importc: "qrcodegen_getSize",
                                       dynlib: libname.}
   ##  Returns the side length of the given QR Code, assuming that encoding succeeded.
   ##  The result is in the range [21, 177]. Note that the length of the array buffer
-  ##  is related to the side length - every 'uint8_t qrcode[]' must have length at least
+  ##  is related to the side length - every 'uint8 qrcode[]' must have length at least
   ##  BUFFER_LEN_FOR_VERSION(version), which equals ceil(size^2 / 8 + 1).
 
-proc getModule*(qrcode: ptr uint8_t; x: cint; y: cint): bool {.cdecl,
+proc getModule*(qrcode: ptr uint8; x: cint; y: cint): bool {.cdecl,
     importc: "qrcodegen_getModule", dynlib: libname.}
   ##  Returns the color of the module (pixel) at the given coordinates, which is false
   ##  for white or true for black. The top left corner has the coordinates (x=0, y=0).
@@ -292,7 +289,7 @@ proc getModule*(qrcode: ptr uint8_t; x: cint; y: cint): bool {.cdecl,
 
 # ---- Utilities ----
 
-proc printQr*(qrcode: ptr uint8_t) =
+proc printQr*(qrcode: ptr uint8) =
   ##  Prints the given QR Code to the console.
   ## This is just a simple example, you should build on this to dynamically create the QR code in the medium you wish. 
   var output:string
@@ -321,8 +318,8 @@ when isMainModule:
     text = "QR Code"
 
   # Example print to screen
-  var qrcode: array[BUFFER_LEN_MAX, uint8_t]
-  var tempBuffer: array[BUFFER_LEN_MAX, uint8_t]
+  var qrcode: array[BUFFER_LEN_MAX, uint8]
+  var tempBuffer: array[BUFFER_LEN_MAX, uint8]
   discard encodeText(cstring text, addr tempBuffer[0], addr qrcode[0], Ecc_Medium, VERSION_MIN, VERSION_MAX, Mask_AUTO, true)
 
 
